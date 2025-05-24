@@ -1,0 +1,319 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>রিক্সাওয়ালা কুরিয়ার - ইনভয়েস</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali&family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans Bengali', sans-serif; background: #F8F9FA; }
+    .btn-primary { background-color: #4285F4; transition: all 0.3s; }
+    .btn-primary:hover { background-color: #34A853; transform: scale(1.05); }
+    .nav-link { transition: all 0.3s; }
+    .nav-link:hover { background-color: #E8F0FE; color: #4285F4; }
+    .watermark { position: absolute; opacity: 0.05; font-size: 2rem; transform: rotate(-30deg); }
+    .hamburger { display: none; }
+    @media (max-width: 768px) {
+      .nav-menu { display: none; }
+      .nav-menu.active { display: block; }
+      .hamburger { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="bg-gradient-to-r from-[#4285F4] to-[#1877F2] p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-white text-xl font-bold">রিক্সাওয়ালা কুরিয়ার</h1>
+      <button class="hamburger text-white md:hidden" onclick="toggleMenu()">☰</button>
+      <div class="nav-menu md:flex md:items-center">
+        <a href="dashboard.html" class="nav-link text-white px-3 py-2 rounded">ড্যাশবোর্ড</a>
+        <a href="profile.html" class="nav-link text-white px-3 py-2 rounded">প্রোফাইল</a>
+        <a href="wallet.html" class="nav-link text-white px-3 py-2 rounded">ওয়ালেট</a>
+        <a href="orders.html" class="nav-link text-white px-3 py-2 rounded">অর্ডার</a>
+        <a href="invoice.html" class="nav-link text-white px-3 py-2 rounded">ইনভয়েস</a>
+        <a href="reports.html" class="nav-link text-white px-3 py-2 rounded">রিপোর্ট</a>
+        <button onclick="logout()" class="nav-link bg-red-500 text-white px-3 py-2 rounded">লগআউট</button>
+      </div>
+    </div>
+  </nav>
+  <div class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">ইনভয়েস তৈরি</h2>
+    <div id="orderForm" class="bg-white p-6 rounded-lg shadow-md mb-6">
+      <p class="mb-4">অর্ডার আইডি: <span id="orderId" class="font-bold"></span></p>
+      <label class="block text-gray-700 mb-2">গ্রাহকের নাম</label>
+      <input type="text" id="customer" class="w-full p-2 border rounded mb-4" aria-label="গ্রাহকের নাম">
+      <label class="block text-gray-700 mb-2">ফোন</label>
+      <input type="text" id="phone" class="w-full p-2 border rounded mb-4" aria-label="ফোন">
+      <label class="block text-gray-700 mb-2">ঠিকানা</label>
+      <input type="text" id="address" class="w-full p-2 border rounded mb-4" aria-label="ঠিকানা">
+      <label class="block text-gray-700 mb-2">পেমেন্ট মেথড</label>
+      <select id="paymentMethod" class="w-full p-2 border rounded mb-4">
+        <option value="wallet">ওয়ালেট</option>
+        <option value="cash">ক্যাশ</option>
+        <option value="bkash">bKash</option>
+      </select>
+      <button onclick="generateInvoice()" class="btn-primary w-full p-2 text-white rounded">ইনভয়েস তৈরি ও PDF সেভ</button>
+    </div>
+    <div id="invoicePreview" class="hidden bg-white p-6 rounded-lg shadow-md relative">
+      <div class="watermark">Rickshawala</div>
+      <h3 class="text-lg font-semibold text-[#4285F4] mb-4">Rickshawala Courier Invoice</h3>
+      <p id="invoiceDetails"></p>
+      <canvas id="barcode" class="mt-4"></canvas><br>
+      <button onclick="window.print()" class="btn-primary p-2 text-white rounded mt-4">প্রিন্ট</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPO6pFLy9_e-4QxK1j5plm3aJukorL-cc",
+      authDomain: "rikshawala-4b781.firebaseapp.com",
+      projectId: "rikshawala-4b781",
+      storageBucket: "rikshawala-4b781.firebasestorage.app",
+      messagingSenderId: "1044246140325",
+      appId: "1:1044246140325:web:2dfbb3b3f9b55466e6c44c",
+      measurementId: "G-DFT19T4JJ9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const roles = {
+      "admin@rickshawala.com": "Admin",
+      "operator@rickshawala.com": "Operator",
+      "delivery@rickshawala.com": "Delivery"
+    };
+
+    const dbRequest = indexedDB.open("RickshawalaDB", 1);
+    let idb;
+    dbRequest.onupgradeneeded = (event) => {
+      idb = event.target.result;
+      idb.createObjectStore("pendingOrders", { keyPath: "orderId" });
+      idb.createObjectStore("pendingTransactions", { keyPath: "transactionId" });
+    };
+    dbRequest.onsuccess = (event) => {
+      idb = event.target.result;
+    };
+
+    async function saveOfflineOrder(order) {
+      const tx = idb.transaction("pendingOrders", "readwrite");
+      const store = tx.objectStore("pendingOrders");
+      await store.add(order);
+    }
+
+    async function saveOfflineTransaction(transaction) {
+      const tx = idb.transaction("pendingTransactions", "readwrite");
+      const store = tx.objectStore("pendingTransactions");
+      await store.add(transaction);
+    }
+
+    async function syncOrders() {
+      const tx = idb.transaction("pendingOrders", "readwrite");
+      const store = tx.objectStore("pendingOrders");
+      const orders = await store.getAll();
+      for (const order of orders) {
+        await addDoc(collection(db, "orders"), order);
+        store.delete(order.orderId);
+      }
+    }
+
+    async function syncTransactions() {
+      const tx = idb.transaction("pendingTransactions", "readwrite");
+      const store = tx.objectStore("pendingTransactions");
+      const transactions = await store.getAll();
+      for (const transaction of transactions) {
+        await addDoc(collection(db, "transactions"), transaction);
+        const senderRef = doc(db, "wallets", transaction.sender);
+        await updateDoc(senderRef, { balance: transaction.senderBalance });
+        store.delete(transaction.transactionId);
+      }
+    }
+
+    window.addEventListener('online', () => {
+      syncOrders();
+      syncTransactions();
+    });
+
+    window.generateInvoice = async function() {
+      const orderId = document.getElementById("orderId").textContent;
+      const name = document.getElementById("customer").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const paymentMethod = document.getElementById("paymentMethod").value;
+      if (!name || !phone || !address) {
+        alert("সমস্ত তথ্য পূরণ করুন");
+        return;
+      }
+      const amount = 100; // ধরে নেওয়া অর্ডার ফি
+      if (paymentMethod === "wallet" || paymentMethod === "bkash") {
+        const userEmail = auth.currentUser.email;
+        const walletRef = doc(db, "wallets", userEmail);
+        const walletSnap = await getDoc(walletRef);
+        let balance = walletSnap.exists() ? walletSnap.data().balance : 0;
+        if (paymentMethod === "wallet" && balance < amount) {
+          alert("অপর্যাপ্ত ওয়ালেট ব্যালেন্স");
+          return;
+        }
+        const transactionId = `TXN-${crypto.randomUUID().slice(0, 8)}`;
+        if (paymentMethod === "bkash") {
+          try {
+            const response = await fetch("https://sandbox.bkash.com/v1.2.0-beta/payment/create", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: amount,
+                currency: "BDT",
+                merchantInvoiceNumber: transactionId,
+                intent: "sale"
+              })
+            });
+            const data = await response.json();
+            if (data.paymentID) {
+              window.location.href = data.bkashURL;
+              return;
+            } else {
+              alert("bKash পেমেন্ট শুরু ব্যর্থ!");
+              return;
+            }
+          } catch (e) {
+            alert("bKash পেমেন্ট ব্যর্থ: " + e.message);
+            return;
+          }
+        }
+        balance -= amount;
+        try {
+          if (!navigator.onLine) {
+            await saveOfflineTransaction({
+              transactionId,
+              sender: userEmail,
+              type: `Payment (${paymentMethod})`,
+              amount,
+              senderBalance: balance,
+              timestamp: new Date()
+            });
+            alert("অফলাইনে পেমেন্ট সেভ হয়েছে!");
+          } else {
+            await updateDoc(walletRef, { balance });
+            await addDoc(collection(db, "transactions"), {
+              transactionId,
+              sender: userEmail,
+              type: `Payment (${paymentMethod})`,
+              amount,
+              timestamp: new Date()
+            });
+          }
+        } catch (e) {
+          alert("পেমেন্ট ব্যর্থ: " + e.message);
+          return;
+        }
+      }
+      const details = `Order ID: ${orderId}<br>তারিখ: ${new Date().toLocaleString('bn-BD')}<br>নাম: ${name}<br>ফোন: ${phone}<br>ঠিকানা: ${address}<br>পেমেন্ট মেথড: ${paymentMethod === "wallet" ? "ওয়ালেট" : paymentMethod === "bkash" ? "bKash" : "ক্যাশ"}`;
+      document.getElementById("invoiceDetails").innerHTML = details;
+      document.getElementById("invoicePreview").classList.remove("hidden");
+      if (typeof JsBarcode !== "undefined") {
+        JsBarcode("#barcode", orderId.replace("RKS-", ""), { format: "CODE128", width: 2, height: 40 });
+      } else {
+        alert("বারকোড তৈরি ব্যর্থ।");
+      }
+      try {
+        if (!navigator.onLine) {
+          await saveOfflineOrder({ orderId, name, phone, address, timestamp: new Date(), status: "Pending", paymentMethod });
+          alert("অফলাইনে অর্ডার সেভ হয়েছে!");
+        } else {
+          await addDoc(collection(db, "orders"), {
+            orderId,
+            name,
+            phone,
+            address,
+            timestamp: new Date(),
+            status: "Pending",
+            paymentMethod
+          });
+          alert("অর্ডার Firestore-এ সংরক্ষিত!");
+        }
+      } catch (e) {
+        alert("অর্ডার সংরক্ষণ ব্যর্থ: " + e.message);
+      }
+      const element = document.getElementById("invoicePreview");
+      html2pdf().from(element).set({
+        margin: 1,
+        filename: `invoice_${orderId}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      }).save();
+    };
+
+    window.toggleMenu = function() {
+      const menu = document.querySelector('.nav-menu');
+      menu.classList.toggle('active');
+    };
+
+    window.logout = function() {
+      signOut(auth).then(() => {
+        window.location.href = "index.html";
+      }).catch((error) => {
+        alert("লগআউট ব্যর্থ: " + error.message);
+      });
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const role = roles[user.email] || "Unknown";
+        document.getElementById("orderId").textContent = `RKS-${crypto.randomUUID().slice(0, 8)}`;
+        if (role === "Delivery") {
+          document.getElementById("orderForm").style.display = "none";
+        }
+      } else {
+        window.location.href = "index.html";
+      }
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</body>
+</html>

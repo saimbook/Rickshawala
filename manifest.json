@@ -1,0 +1,15 @@
+{
+  "name": "Rickshawala Courier",
+  "short_name": "Rickshawala",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F8F9FA",
+  "theme_color": "#4285F4",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
