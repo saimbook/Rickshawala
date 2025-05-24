@@ -1,0 +1,68 @@
+body {
+  font-family: 'Noto Sans Bengali', 'Roboto', sans-serif;
+  background: #F8F9FA;
+  color: #1A202C; /* Default text color dark blue */
+}
+
+.text-content {
+  color: #1A202C; /* All content text dark blue */
+}
+
+.wallet-balance, .transaction-item, .input-field {
+  color: #1A202C; /* Specific elements dark blue */
+}
+
+.error-message {
+  color: #EA4335; /* Error messages red */
+  font-weight: bold;
+  margin-top: 1rem;
+  display: none;
+}
+
+.btn-primary {
+  background-color: #4285F4;
+  color: #FFFFFF; /* Button text white */
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #34A853;
+  transform: scale(1.05);
+}
+
+.nav-link {
+  transition: all 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #E8F0FE;
+  color: #4285F4;
+}
+
+nav {
+  background: linear-gradient(to right, #4285F4, #1877F2);
+}
+
+nav h1, nav .nav-link, nav .hamburger {
+  color: #FFFFFF; /* Nav text white */
+}
+
+.container {
+  background: #FFFFFF; /* Content area white */
+}
+
+.hamburger {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-menu {
+    display: none;
+  }
+  .nav-menu.active {
+    display: block;
+  }
+  .hamburger {
+    display: block;
+  }
+}
