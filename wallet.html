@@ -1,118 +1,124 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>রিক্সাওয়ালা কুরিয়ার - ওয়ালেট</title>
+  <title data-lang-key="title">রিক্সাওয়ালা কুরিয়ার - ওয়ালেট</title>
   <link rel="manifest" href="manifest.json">
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Noto Sans Bengali', 'Roboto', sans-serif; background: #F8F9FA; }
-    .btn-primary { background-color: #4285F4; transition: all 0.3s; }
-    .btn-primary:hover { background-color: #34A853; transform: scale(1.05); }
-    .nav-link { transition: all 0.3s; }
-    .nav-link:hover { background-color: #E8F0FE; color: #4285F4; }
-    .error-message { color: #EA4335; font-weight: bold; margin-top: 1rem; display: none; }
-    .wallet-balance { color: #000000; font-weight: bold; }
-    .transaction-item { color: #000000; }
-    .text-content { color: #000000; }
-    .input-field { color: #000000; }
-    .hamburger { display: none; }
-    @media (max-width: 768px) {
-      .nav-menu { display: none; }
-      .nav-menu.active { display: block; }
-      .hamburger { display: block; }
-    }
-  </style>
+  <link href="styles.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <nav class="bg-gradient-to-r from-[#4285F4] to-[#1877F2] p-4">
+  <nav class="p-4">
     <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-white text-xl font-bold">রিক্সাওয়ালা কুরিয়ার</h1>
-      <button class="hamburger text-white md:hidden" onclick="toggleMenu()">☰</button>
+      <h1 class="text-xl font-bold" data-lang-key="app_name">রিক্সাওয়ালা কুরিয়ার</h1>
+      <div class="flex items-center gap-4">
+        <button class="language-toggle" onclick="switchLanguage(localStorage.getItem('language') === 'bn' ? 'en' : 'bn')" data-lang-key="language_toggle">ইংরেজি</button>
+        <button class="hamburger md:hidden" onclick="toggleMenu()">☰</button>
+      </div>
       <div class="nav-menu md:flex md:items-center">
-        <a href="dashboard.html" class="nav-link text-white px-3 py-2 rounded">ড্যাশবোর্ড</a>
-        <a href="profile.html" class="nav-link text-white px-3 py-2 rounded">প্রোফাইল</a>
-        <a href="wallet.html" class="nav-link text-white px-3 py-2 rounded">ওয়ালেট</a>
-        <a href="orders.html" class="nav-link text-white px-3 py-2 rounded">অর্ডার</a>
-        <a href="invoice.html" class="nav-link text-white px-3 py-2 rounded">ইনভয়েস</a>
-        <a href="reports.html" class="nav-link text-white px-3 py-2 rounded">রিপোর্ট</a>
-        <button onclick="logout()" class="nav-link bg-red-500 text-white px-3 py-2 rounded">লগআউট</button>
+        <a href="dashboard.html" class="nav-link px-3 py-2 rounded" data-lang-key="dashboard">ড্যাশবোর্ড</a>
+        <a href="profile.html" class="nav-link px-3 py-2 rounded" data-lang-key="profile">প্রোফাইল</a>
+        <a href="wallet.html" class="nav-link px-3 py-2 rounded" data-lang-key="wallet">ওয়ালেট</a>
+        <a href="orders.html" class="nav-link px-3 py-2 rounded" data-lang-key="orders">অর্ডার</a>
+        <a href="invoice.html" class="nav-link px-3 py-2 rounded" data-lang-key="invoice">ইনভয়েস</a>
+        <a href="reports.html" class="nav-link px-3 py-2 rounded" data-lang-key="reports">রিপোর্ট</a>
+        <button onclick="logout()" class="nav-link bg-red-500 px-3 py-2 rounded" data-lang-key="logout">লগআউট</button>
       </div>
     </div>
   </nav>
   <div class="container mx-auto p-6">
-    <h2 class="text-2xl font-bold text-content mb-6">ওয়ালেট</h2>
-    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
-      <p class="text-lg text-content">ব্যালেন্স: <span id="walletBalance" class="wallet-balance">0 টাকা</span></p>
+    <h2 class="text-2xl font-bold text-content mb-6" data-lang-key="wallet">ওয়ালেট</h2>
+    <div class="p-6 rounded-lg shadow-md mb-6">
+      <p class="text-lg text-content" data-lang-key="balance">ব্যালেন্স: <span id="walletBalance" class="wallet-balance">0 টাকা</span></p>
       <p id="errorMessage" class="error-message"></p>
     </div>
     <div id="walletActions" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h3 class="text-lg font-semibold text-[#34A853] mb-4">টাকা যোগ করুন</h3>
-        <input type="number" id="addMoneyAmount" class="w-full p-2 border rounded mb-4 input-field" aria-label="টাকার পরিমাণ">
+      <div class="p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-[#34A853] mb-4" data-lang-key="add_money">টাকা যোগ করুন</h3>
+        <input type="number" id="addMoneyAmount" class="w-full p-2 border rounded mb-4 input-field" aria-label="টাকার পরিমাণ" placeholder="টাকার পরিমাণ">
         <select id="paymentGateway" class="w-full p-2 border rounded mb-4 input-field">
-          <option value="manual">ম্যানুয়াল</option>
+          <option value="manual" data-lang-key="manual">ম্যানুয়াল</option>
           <option value="bkash">bKash</option>
         </select>
-        <button onclick="addMoney()" class="btn-primary w-full p-2 text-white rounded">টাকা যোগ করুন</button>
+        <button onclick="addMoney()" class="btn-primary w-full p-2 rounded" data-lang-key="add_money">টাকা যোগ করুন</button>
         <p id="addMoneyError" class="error-message"></p>
       </div>
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h3 class="text-lg font-semibold text-[#EA4335] mb-4">টাকা পাঠান</h3>
-        <input type="email" id="sendMoneyEmail" class="w-full p-2 border rounded mb-4 input-field" aria-label="প্রাপকের ইমেইল">
-        <input type="number" id="sendMoneyAmount" class="w-full p-2 border rounded mb-4 input-field" aria-label="টাকার পরিমাণ">
-        <button onclick="sendMoney()" class="btn-primary w-full p-2 text-white rounded">টাকা পাঠান</button>
+      <div class="p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-[#EA4335] mb-4" data-lang-key="send_money">টাকা পাঠান</h3>
+        <input type="email" id="sendMoneyEmail" class="w-full p-2 border rounded mb-4 input-field" aria-label="প্রাপকের ইমেইল" placeholder="প্রাপকের ইমেইল">
+        <input type="number" id="sendMoneyAmount" class="w-full p-2 border rounded mb-4 input-field" aria-label="টাকার পরিমাণ" placeholder="টাকার পরিমাণ">
+        <button onclick="sendMoney()" class="btn-primary w-full p-2 rounded" data-lang-key="send_money">টাকা পাঠান</button>
         <p id="sendMoneyError" class="error-message"></p>
       </div>
     </div>
-    <div id="transactionHistory" class="bg-white p-6 rounded-lg shadow-md mt-6"></div>
+    <div id="transactionHistory" class="p-6 rounded-lg shadow-md mt-6"></div>
+    <!-- Auto-payment section -->
+    <div class="auto-payment-section" id="autoPaymentSection">
+      <h3 class="auto-payment-header" data-lang-key="auto_payment_setup">অটো-পেমেন্ট সেটআপ</h3>
+      <div class="auto-payment-form">
+        <input type="email" id="autoPaymentEmail" class="auto-payment-input" placeholder="প্রাপকের ইমেইল" aria-label="প্রাপকের ইমেইল">
+        <input type="number" id="autoPaymentAmount" class="auto-payment-input" placeholder="টাকার পরিমাণ" aria-label="টাকার পরিমাণ">
+        <select id="autoPaymentFrequency" class="auto-payment-input">
+          <option value="monthly" data-lang-key="monthly">মাসিক</option>
+          <option value="weekly" data-lang-key="weekly">সাপ্তাহিক</option>
+        </select>
+        <button onclick="setupAutoPayment()" class="btn-primary" data-lang-key="set_schedule">শিডিউল সেট করুন</button>
+        <p id="autoPaymentError" class="error-message"></p>
+      </div>
+      <table class="auto-payment-table" id="autoPaymentTable">
+        <thead>
+          <tr>
+            <th data-lang-key="recipient">প্রাপক</th>
+            <th data-lang-key="amount">পরিমাণ</th>
+            <th data-lang-key="frequency">ফ্রিকোয়েন্সি</th>
+            <th data-lang-key="action">অ্যাকশন</th>
+          </tr>
+        </thead>
+        <tbody id="autoPaymentList"></tbody>
+      </table>
+    </div>
+    <!-- Analytics section -->
+    <div class="analytics-section">
+      <h3 class="analytics-header" data-lang-key="analytics">ওয়ালেট অ্যানালিটিক্স</h3>
+      <canvas id="analyticsChart" class="analytics-canvas"></canvas>
+    </div>
+    <!-- Rewards section -->
+    <div class="rewards-section" id="rewardsSection">
+      <h3 class="rewards-header" data-lang-key="rewards">রিওয়ার্ড পয়েন্ট</h3>
+      <p class="rewards-balance" data-lang-key="rewards_balance">বর্তমান পয়েন্ট: <span id="rewardsBalance">0</span></p>
+      <button class="rewards-button" onclick="convertRewards()" data-lang-key="convert_rewards">পয়েন্ট রূপান্তর করুন</button>
+    </div>
+    <!-- Messaging tab -->
+    <div class="messaging-tab">
+      <h3 class="messaging-header" data-lang-key="messaging">মেসেজিং</h3>
+      <div class="user-list" id="userList"></div>
+      <div class="messaging-body" id="messagingBody"></div>
+      <input type="text" class="messaging-input" id="messagingInput" placeholder="আপনার মেসেজ লিখুন..." aria-label="মেসেজ">
+      <button class="messaging-send" onclick="sendMessage()" data-lang-key="send">পাঠান</button>
+    </div>
+  </div>
+
+  <!-- Chat Icon and Window -->
+  <div class="chat-icon" onclick="toggleChat()">💬</div>
+  <div class="chat-window" id="chatWindow">
+    <div class="chat-header">
+      <span data-lang-key="live_chat">লাইভ চ্যাট সাপোর্ট</span>
+      <button onclick="toggleChat()">✕</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+      <input type="text" class="chat-input" id="chatInput" placeholder="আপনার মেসেজ লিখুন..." aria-label="চ্যাট মেসেজ">
+      <button class="chat-send" onclick="sendChatMessage()" data-lang-key="send">পাঠান</button>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, updateDoc, setDoc, getDoc, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAPO6pFLy9_e-4QxK1j5plm3aJukorL-cc",
@@ -134,11 +140,173 @@
       "delivery@rickshawala.com": "Delivery"
     };
 
-    function showError(elementId, message) {
+    const languageDictionary = {
+      bn: {
+        title: "রিক্সাওয়ালা কুরিয়ার - ওয়ালেট",
+        app_name: "রিক্সাওয়ালা কুরিয়ার",
+        language_toggle: "ইংরেজি",
+        dashboard: "ড্যাশবোর্ড",
+        profile: "প্রোফাইল",
+        wallet: "ওয়ালেট",
+        orders: "অর্ডার",
+        invoice: "ইনভয়েস",
+        reports: "রিপোর্ট",
+        logout: "লগআউট",
+        balance: "ব্যালেন্স",
+        add_money: "টাকা যোগ করুন",
+        manual: "ম্যানুয়াল",
+        send_money: "টাকা পাঠান",
+        auto_payment_setup: "অটো-পেমেন্ট সেটআপ",
+        set_schedule: "শিডিউল সেট করুন",
+        recipient: "প্রাপক",
+        amount: "পরিমাণ",
+        frequency: "ফ্রিকোয়েন্সি",
+        action: "অ্যাকশন",
+        monthly: "মাসিক",
+        weekly: "সাপ্তাহিক",
+        analytics: "ওয়ালেট অ্যানালিটিক্স",
+        rewards: "রিওয়ার্ড পয়েন্ট",
+        rewards_balance: "বর্তমান পয়েন্ট",
+        convert_rewards: "পয়েন্ট রূপান্তর করুন",
+        messaging: "মেসেজিং",
+        send: "পাঠান",
+        live_chat: "লাইভ চ্যাট সাপোর্ট",
+        error_invalid_amount: "বৈধ টাকার পরিমাণ লিখুন",
+        error_bkash_not_available: "bKash পেমেন্ট এখনও প্রোডাকশনে নেই। ম্যানুয়াল ব্যবহার করুন।",
+        error_offline_saved: "অফলাইনে ট্রানজ্যাকশন সেভ হয়েছে!",
+        error_offline_failed: "অফলাইন সেভ ব্যর্থ: ",
+        error_add_money_success: "টাকা যোগ সফল!",
+        error_add_money_failed: "টাকা যোগ ব্যর্থ: ",
+        error_invalid_recipient: "প্রাপকের ইমেইল এবং বৈধ টাকার পরিমাণ লিখুন",
+        error_insufficient_balance: "অপর্যাপ্ত ব্যালেন্স",
+        error_send_money_success: "টাকা পাঠানো সফল!",
+        error_send_money_failed: "টাকা পাঠানো ব্যর্থ: ",
+        error_transaction_history_failed: "ট্রানজ্যাকশন হিস্ট্রি লোড ব্যর্থ: ",
+        error_logout_failed: "লগআউট ব্যর্থ: ",
+        error_chat_load_failed: "চ্যাট মেসেজ লোড ব্যর্থ: ",
+        error_message_send_failed: "মেসেজ পাঠানো ব্যর্থ: ",
+        error_user_list_failed: "ইউজার লিস্ট লোড ব্যর্থ: ",
+        error_chat_start_failed: "চ্যাট শুরু ব্যর্থ: ",
+        error_auto_payment_invalid: "প্রাপকের ইমেইল এবং বৈধ টাকার পরিমাণ লিখুন",
+        error_auto_payment_success: "অটো-পেমেন্ট শিডিউল সেট সফল!",
+        error_auto_payment_failed: "অটো-পেমেন্ট সেটআপ ব্যর্থ: ",
+        error_auto_payment_cancel_success: "অটো-পেমেন্ট বাতিল সফল!",
+        error_auto_payment_cancel_failed: "অটো-পেমেন্ট বাতিল ব্যর্থ: ",
+        error_analytics_failed: "অ্যানালিটিক্স লোড ব্যর্থ: ",
+        error_rewards_load_failed: "রিওয়ার্ড পয়েন্ট লোড ব্যর্থ: ",
+        error_rewards_convert_success: "পয়েন্ট রূপান্তর সফল!",
+        error_rewards_convert_failed: "পয়েন্ট রূপান্তর ব্যর্থ: ",
+        error_no_rewards: "রূপান্তরের জন্য পর্যাপ্ত পয়েন্ট নেই"
+      },
+      en: {
+        title: "Rickshawala Courier - Wallet",
+        app_name: "Rickshawala Courier",
+        language_toggle: "বাংলা",
+        dashboard: "Dashboard",
+        profile: "Profile",
+        wallet: "Wallet",
+        orders: "Orders",
+        invoice: "Invoice",
+        reports: "Reports",
+        logout: "Logout",
+        balance: "Balance",
+        add_money: "Add Money",
+        manual: "Manual",
+        send_money: "Send Money",
+        auto_payment_setup: "Auto-Payment Setup",
+        set_schedule: "Set Schedule",
+        recipient: "Recipient",
+        amount: "Amount",
+        frequency: "Frequency",
+        action: "Action",
+        monthly: "Monthly",
+        weekly: "Weekly",
+        analytics: "Wallet Analytics",
+        rewards: "Reward Points",
+        rewards_balance: "Current Points",
+        convert_rewards: "Convert Points",
+        messaging: "Messaging",
+        send: "Send",
+        live_chat: "Live Chat Support",
+        error_invalid_amount: "Enter a valid amount",
+        error_bkash_not_available: "bKash payment is not yet in production. Use manual.",
+        error_offline_saved: "Transaction saved offline!",
+        error_offline_failed: "Offline save failed: ",
+        error_add_money_success: "Money added successfully!",
+        error_add_money_failed: "Failed to add money: ",
+        error_invalid_recipient: "Enter recipient email and valid amount",
+        error_insufficient_balance: "Insufficient balance",
+        error_send_money_success: "Money sent successfully!",
+        error_send_money_failed: "Failed to send money: ",
+        error_transaction_history_failed: "Failed to load transaction history: ",
+        error_logout_failed: "Logout failed: ",
+        error_chat_load_failed: "Failed to load chat messages: ",
+        error_message_send_failed: "Failed to send message: ",
+        error_user_list_failed: "Failed to load user list: ",
+        error_chat_start_failed: "Failed to start chat: ",
+        error_auto_payment_invalid: "Enter recipient email and valid amount",
+        error_auto_payment_success: "Auto-payment schedule set successfully!",
+        error_auto_payment_failed: "Failed to set auto-payment: ",
+        error_auto_payment_cancel_success: "Auto-payment cancelled successfully!",
+        error_auto_payment_cancel_failed: "Failed to cancel auto-payment: ",
+        error_analytics_failed: "Failed to load analytics: ",
+        error_rewards_load_failed: "Failed to load reward points: ",
+        error_rewards_convert_success: "Points converted successfully!",
+        error_rewards_convert_failed: "Failed to convert points: ",
+        error_no_rewards: "Not enough points to convert"
+      }
+    };
+
+    function showError(elementId, messageKey, error = '') {
+      const lang = localStorage.getItem('language') || 'bn';
       const element = document.getElementById(elementId);
-      element.textContent = message;
+      element.textContent = languageDictionary[lang][messageKey] + error;
       element.style.display = 'block';
       setTimeout(() => { element.style.display = 'none'; }, 5000);
+    }
+
+    function switchLanguage(lang) {
+      localStorage.setItem('language', lang);
+      document.querySelectorAll('[data-lang-key]').forEach(element => {
+        const key = element.getAttribute('data-lang-key');
+        if (languageDictionary[lang][key]) {
+          if (element.tagName === 'INPUT' && element.hasAttribute('placeholder')) {
+            element.placeholder = languageDictionary[lang][key];
+          } else {
+            element.textContent = languageDictionary[lang][key];
+          }
+        }
+      });
+      const toggleButton = document.querySelector('.language-toggle');
+      toggleButton.textContent = languageDictionary[lang].language_toggle;
+      document.querySelectorAll('input[aria-label]').forEach(input => {
+        const key = input.getAttribute('aria-label');
+        if (languageDictionary[lang][key]) {
+          input.setAttribute('aria-label', languageDictionary[lang][key]);
+        }
+      });
+      updateDynamicContent(lang);
+    }
+
+    function updateDynamicContent(lang) {
+      const walletBalance = document.getElementById('walletBalance');
+      if (walletBalance.textContent) {
+        const balance = parseFloat(walletBalance.textContent) || 0;
+        walletBalance.textContent = lang === 'bn' ? `${balance} টাকা` : `${balance} BDT`;
+      }
+      const transactionHistory = document.getElementById('transactionHistory');
+      if (transactionHistory.innerHTML) {
+        loadTransactionHistory(auth.currentUser.email);
+      }
+      const autoPaymentList = document.getElementById('autoPaymentList');
+      if (autoPaymentList.innerHTML) {
+        loadAutoPayments(auth.currentUser.email);
+      }
+      const rewardsBalance = document.getElementById('rewardsBalance');
+      if (rewardsBalance.textContent) {
+        const points = parseInt(rewardsBalance.textContent) || 0;
+        document.querySelector('.rewards-balance').textContent = `${languageDictionary[lang].rewards_balance}: ${points}`;
+      }
     }
 
     const dbRequest = indexedDB.open("RickshawalaDB", 1);
@@ -146,6 +314,9 @@
     dbRequest.onupgradeneeded = (event) => {
       idb = event.target.result;
       idb.createObjectStore("pendingTransactions", { keyPath: "transactionId" });
+      idb.createObjectStore("pendingMessages", { keyPath: "messageId" });
+      idb.createObjectStore("pendingAutoPayments", { keyPath: "scheduleId" });
+      idb.createObjectStore("pendingRewards", { keyPath: "rewardId" });
     };
     dbRequest.onsuccess = (event) => {
       idb = event.target.result;
@@ -156,9 +327,42 @@
         const tx = idb.transaction("pendingTransactions", "readwrite");
         const store = tx.objectStore("pendingTransactions");
         await store.add(transaction);
-        showError("errorMessage", "অফলাইনে ট্রানজ্যাকশন সেভ হয়েছে!");
+        showError("errorMessage", "error_offline_saved");
       } catch (e) {
-        showError("errorMessage", "অফলাইন সেভ ব্যর্থ: " + e.message);
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    async function saveOfflineMessage(message) {
+      try {
+        const tx = idb.transaction("pendingMessages", "readwrite");
+        const store = tx.objectStore("pendingMessages");
+        await store.add(message);
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    async function saveOfflineAutoPayment(autoPayment) {
+      try {
+        const tx = idb.transaction("pendingAutoPayments", "readwrite");
+        const store = tx.objectStore("pendingAutoPayments");
+        await store.add(autoPayment);
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    async function saveOfflineReward(reward) {
+      try {
+        const tx = idb.transaction("pendingRewards", "readwrite");
+        const store = tx.objectStore("pendingRewards");
+        await store.add(reward);
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
       }
     }
 
@@ -177,13 +381,76 @@
           }
           store.delete(transaction.transactionId);
         }
-        showError("errorMessage", "অফলাইন ট্রানজ্যাকশন সিঙ্ক হয়েছে!");
+        showError("errorMessage", "error_offline_saved");
       } catch (e) {
-        showError("errorMessage", "সিঙ্ক ব্যর্থ: " + e.message);
+        showError("errorMessage", "error_offline_failed", e.message);
       }
     }
 
-    window.addEventListener('online', syncTransactions);
+    async function syncMessages() {
+      try {
+        const tx = idb.transaction("pendingMessages", "readwrite");
+        const store = tx.objectStore("pendingMessages");
+        const messages = await store.getAll();
+        for (const message of messages) {
+          await addDoc(collection(db, "chats", message.userEmail, "messages"), {
+            messageId: message.messageId,
+            text: message.text,
+            sender: message.sender,
+            timestamp: message.timestamp
+          });
+          store.delete(message.messageId);
+        }
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    async function syncAutoPayments() {
+      try {
+        const tx = idb.transaction("pendingAutoPayments", "readwrite");
+        const store = tx.objectStore("pendingAutoPayments");
+        const autoPayments = await store.getAll();
+        for (const autoPayment of autoPayments) {
+          await setDoc(doc(db, "autoPayments", autoPayment.userEmail, autoPayment.scheduleId), {
+            recipient: autoPayment.recipient,
+            amount: autoPayment.amount,
+            frequency: autoPayment.frequency,
+            createdAt: autoPayment.createdAt
+          });
+          store.delete(autoPayment.scheduleId);
+        }
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    async function syncRewards() {
+      try {
+        const tx = idb.transaction("pendingRewards", "readwrite");
+        const store = tx.objectStore("pendingRewards");
+        const rewards = await store.getAll();
+        for (const reward of rewards) {
+          const rewardRef = doc(db, "rewards", reward.userEmail);
+          const rewardSnap = await getDoc(rewardRef);
+          let currentPoints = rewardSnap.exists() ? rewardSnap.data().points : 0;
+          await setDoc(rewardRef, { points: currentPoints + reward.points });
+          store.delete(reward.rewardId);
+        }
+        showError("errorMessage", "error_offline_saved");
+      } catch (e) {
+        showError("errorMessage", "error_offline_failed", e.message);
+      }
+    }
+
+    window.addEventListener('online', () => {
+      syncTransactions();
+      syncMessages();
+      syncAutoPayments();
+      syncRewards();
+    });
 
     async function loadWalletBalance(userEmail) {
       try {
@@ -195,11 +462,12 @@
         } else {
           await setDoc(walletRef, { balance: 0 });
         }
-        document.getElementById("walletBalance").textContent = `${balance} টাকা`;
+        const lang = localStorage.getItem('language') || 'bn';
+        document.getElementById("walletBalance").textContent = lang === 'bn' ? `${balance} টাকা` : `${balance} BDT`;
         return balance;
       } catch (e) {
-        console.error("ব্যালেন্স লোড ব্যর্থ:", e);
-        showError("errorMessage", "ব্যালেন্স লোড ব্যর্থ: " + e.message);
+        console.error("Balance load failed:", e);
+        showError("errorMessage", "error_balance_load_failed", e.message);
         return 0;
       }
     }
@@ -209,27 +477,147 @@
         const transactionsList = document.getElementById("transactionHistory");
         const q = query(collection(db, "transactions"), orderBy("timestamp", "desc"));
         const querySnapshot = await getDocs(q);
-        let html = "<h3 class='text-lg font-semibold text-[#4285F4] mb-4'>ট্রানজ্যাকশন হিস্ট্রি</h3><ul>";
+        const lang = localStorage.getItem('language') || 'bn';
+        let html = `<h3 class='text-lg font-semibold text-[#4285F4] mb-4'>${languageDictionary[lang].transaction_history}</h3><ul>`;
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           if (data.sender === userEmail || data.receiver === userEmail) {
-            html += `<li class="py-2 transaction-item">${data.transactionId} - ${data.type} - ${data.amount} টাকা - ${new Date(data.timestamp.toDate()).toLocaleString('bn-BD')}</li>`;
+            const type = lang === 'bn' ? (data.type === "Add Money (manual)" ? "টাকা যোগ (ম্যানুয়াল)" : data.type === "Send Money" ? "টাকা পাঠানো" : data.type) : data.type;
+            html += `<li class="py-2 transaction-item">${data.transactionId} - ${type} - ${data.amount} ${lang === 'bn' ? 'টাকা' : 'BDT'} - ${new Date(data.timestamp.toDate()).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US')}</li>`;
           }
         });
         html += "</ul>";
         transactionsList.innerHTML = html;
       } catch (e) {
-        console.error("ট্রানজ্যাকশন হিস্ট্রি লোড ব্যর্থ:", e);
-        showError("errorMessage", "ট্রানজ্যাকশন হিস্ট্রি লোড ব্যর্থ: " + e.message);
+        console.error("Transaction history load failed:", e);
+        showError("errorMessage", "error_transaction_history_failed", e.message);
       }
     }
+
+    async function loadAnalytics(userEmail) {
+      try {
+        const q = query(collection(db, "transactions"), orderBy("timestamp", "desc"));
+        const querySnapshot = await getDocs(q);
+        const lang = localStorage.getItem('language') || 'bn';
+        const monthlyData = {};
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.sender === userEmail || data.receiver === userEmail) {
+            const date = new Date(data.timestamp.toDate());
+            const month = date.toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US', { month: 'short', year: 'numeric' });
+            if (!monthlyData[month]) {
+              monthlyData[month] = { income: 0, expense: 0 };
+            }
+            if (data.sender === userEmail) {
+              monthlyData[month].expense += data.amount;
+            } else {
+              monthlyData[month].income += data.amount;
+            }
+          }
+        });
+        const labels = Object.keys(monthlyData).reverse().slice(0, 6);
+        const incomeData = labels.map(month => monthlyData[month].income);
+        const expenseData = labels.map(month => monthlyData[month].expense);
+        new Chart(document.getElementById("analyticsChart"), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: languageDictionary[lang].income,
+                data: incomeData,
+                backgroundColor: '#34A853'
+              },
+              {
+                label: languageDictionary[lang].expense,
+                data: expenseData,
+                backgroundColor: '#EA4335'
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Analytics load failed:", e);
+        showError("errorMessage", "error_analytics_failed", e.message);
+      }
+    }
+
+    async function loadRewards(userEmail) {
+      try {
+        const rewardRef = doc(db, "rewards", userEmail);
+        const rewardSnap = await getDoc(rewardRef);
+        let points = rewardSnap.exists() ? rewardSnap.data().points : 0;
+        const lang = localStorage.getItem('language') || 'bn';
+        document.getElementById("rewardsBalance").textContent = points;
+        document.querySelector('.rewards-balance').textContent = `${languageDictionary[lang].rewards_balance}: ${points}`;
+        return points;
+      } catch (e) {
+        console.error("Reward points load failed:", e);
+        showError("errorMessage", "error_rewards_load_failed", e.message);
+        return 0;
+      }
+    }
+
+    window.convertRewards = async function() {
+      try {
+        const userEmail = auth.currentUser.email;
+        const rewardRef = doc(db, "rewards", userEmail);
+        const walletRef = doc(db, "wallets", userEmail);
+        const rewardSnap = await getDoc(rewardRef);
+        let points = rewardSnap.exists() ? rewardSnap.data().points : 0;
+        if (points < 100) {
+          showError("errorMessage", "error_no_rewards");
+          return;
+        }
+        const amount = Math.floor(points / 100); // 100 points = 1 BDT
+        points %= 100;
+        const walletSnap = await getDoc(walletRef);
+        let balance = walletSnap.exists() ? walletSnap.data().balance : 0;
+        balance += amount;
+        const transactionId = `TXN-${crypto.randomUUID().slice(0, 8)}`;
+        if (!navigator.onLine) {
+          await saveOfflineTransaction({
+            transactionId,
+            sender: userEmail,
+            type: "Reward Conversion",
+            amount,
+            senderBalance: balance,
+            timestamp: new Date()
+          });
+          await saveOfflineReward({ rewardId: `RWD-${crypto.randomUUID().slice(0, 8)}`, userEmail, points });
+        } else {
+          await updateDoc(walletRef, { balance });
+          await setDoc(rewardRef, { points });
+          await addDoc(collection(db, "transactions"), {
+            transactionId,
+            sender: userEmail,
+            type: "Reward Conversion",
+            amount,
+            timestamp: new Date()
+          });
+        }
+        showError("errorMessage", "error_rewards_convert_success");
+        loadWalletBalance(userEmail);
+        loadRewards(userEmail);
+        loadTransactionHistory(userEmail);
+      } catch (e) {
+        console.error("Points conversion failed:", e);
+        showError("errorMessage", "error_rewards_convert_failed", e.message);
+      }
+    };
 
     window.addMoney = async function() {
       try {
         const amount = parseFloat(document.getElementById("addMoneyAmount").value);
         const paymentGateway = document.getElementById("paymentGateway").value;
         if (!amount || amount <= 0) {
-          showError("addMoneyError", "বৈধ টাকার পরিমাণ লিখুন");
+          showError("addMoneyError", "error_invalid_amount");
           return;
         }
         const userEmail = auth.currentUser.email;
@@ -240,7 +628,7 @@
         const newBalance = currentBalance + amount;
 
         if (paymentGateway === "bkash") {
-          showError("addMoneyError", "bKash পেমেন্ট এখনও প্রোডাকশনে নেই। ম্যানুয়াল ব্যবহার করুন।");
+          showError("addMoneyError", "error_bkash_not_available");
           return;
         }
 
@@ -262,13 +650,13 @@
             amount,
             timestamp: new Date()
           });
-          showError("addMoneyError", "টাকা যোগ সফল!");
+          showError("addMoneyError", "error_add_money_success");
         }
         loadWalletBalance(userEmail);
         loadTransactionHistory(userEmail);
       } catch (e) {
-        console.error("টাকা যোগ ব্যর্থ:", e);
-        showError("addMoneyError", "টাকা যোগ ব্যর্থ: " + e.message);
+        console.error("Add money failed:", e);
+        showError("addMoneyError", "error_add_money_failed", e.message);
       }
     };
 
@@ -277,7 +665,7 @@
         const receiverEmail = document.getElementById("sendMoneyEmail").value.trim();
         const amount = parseFloat(document.getElementById("sendMoneyAmount").value);
         if (!receiverEmail || !amount || amount <= 0) {
-          showError("sendMoneyError", "প্রাপকের ইমেইল এবং বৈধ টাকার পরিমাণ লিখুন");
+          showError("sendMoneyError", "error_invalid_recipient");
           return;
         }
         const userEmail = auth.currentUser.email;
@@ -289,7 +677,7 @@
         let senderBalance = senderWalletSnap.exists() ? senderWalletSnap.data().balance : 0;
         let receiverBalance = receiverWalletSnap.exists() ? receiverWalletSnap.data().balance : 0;
         if (senderBalance < amount) {
-          showError("sendMoneyError", "অপর্যাপ্ত ব্যালেন্স");
+          showError("sendMoneyError", "error_insufficient_balance");
           return;
         }
         senderBalance -= amount;
@@ -317,13 +705,13 @@
             amount,
             timestamp: new Date()
           });
-          showError("sendMoneyError", "টাকা পাঠানো সফল!");
+          showError("sendMoneyError", "error_send_money_success");
         }
         loadWalletBalance(userEmail);
         loadTransactionHistory(userEmail);
       } catch (e) {
-        console.error("টাকা পাঠানো ব্যর্থ:", e);
-        showError("sendMoneyError", "টাকা পাঠানো ব্যর্থ: " + e.message);
+        console.error("Send money failed:", e);
+        showError("sendMoneyError", "error_send_money_failed", e.message);
       }
     };
 
@@ -336,18 +724,221 @@
       signOut(auth).then(() => {
         window.location.href = "index.html";
       }).catch((error) => {
-        showError("errorMessage", "লগআউট ব্যর্থ: " + error.message);
+        showError("errorMessage", "error_logout_failed", error.message);
       });
+    };
+
+    window.toggleChat = function() {
+      const chatWindow = document.getElementById("chatWindow");
+      chatWindow.classList.toggle("active");
+    };
+
+    async function loadChatMessages(userEmail) {
+      try {
+        const chatBody = document.getElementById("chatBody");
+        const q = query(collection(db, "chats", userEmail, "messages"), orderBy("timestamp", "asc"));
+        onSnapshot(q, (snapshot) => {
+          chatBody.innerHTML = "";
+          const lang = localStorage.getItem('language') || 'bn';
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const messageClass = data.sender === userEmail ? "sent" : "received";
+            chatBody.innerHTML += `<div class="chat-message ${messageClass}">${data.text} <br><small>${new Date(data.timestamp.toDate()).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US')}</small></div>`;
+          });
+          chatBody.scrollTop = chatBody.scrollHeight;
+        });
+      } catch (e) {
+        console.error("Chat messages load failed:", e);
+        showError("errorMessage", "error_chat_load_failed", e.message);
+      }
+    }
+
+    window.sendChatMessage = async function() {
+      try {
+        const chatInput = document.getElementById("chatInput");
+        const text = chatInput.value.trim();
+        if (!text) return;
+        const userEmail = auth.currentUser.email;
+        const messageId = `MSG-${crypto.randomUUID().slice(0, 8)}`;
+        const message = {
+          messageId,
+          text,
+          sender: userEmail,
+          timestamp: new Date()
+        };
+
+        if (!navigator.onLine) {
+          await saveOfflineMessage({ ...message, userEmail });
+        } else {
+          await addDoc(collection(db, "chats", userEmail, "messages"), message);
+        }
+        chatInput.value = "";
+      } catch (e) {
+        console.error("Message send failed:", e);
+        showError("errorMessage", "error_message_send_failed", e.message);
+      }
+    };
+
+    async function loadUserList(userEmail) {
+      try {
+        const userList = document.getElementById("userList");
+        const users = Object.keys(roles).filter(email => email !== userEmail);
+        let html = "";
+        users.forEach(email => {
+          html += `<div class="user-item" onclick="startChat('${email}')">${email}</div>`;
+        });
+        userList.innerHTML = html;
+      } catch (e) {
+        console.error("User list load failed:", e);
+        showError("errorMessage", "error_user_list_failed", e.message);
+      }
+    }
+
+    window.startChat = async function(recipientEmail) {
+      try {
+        const userEmail = auth.currentUser.email;
+        const chatId = [userEmail, recipientEmail].sort().join("_");
+        const messagingBody = document.getElementById("messagingBody");
+        const lang = localStorage.getItem('language') || 'bn';
+        const q = query(collection(db, "messages", chatId, "chat"), orderBy("timestamp", "asc"));
+        onSnapshot(q, (snapshot) => {
+          messagingBody.innerHTML = "";
+          snapshot.forEach((doc) => {
+            const data = doc.data();
+            const messageClass = data.sender === userEmail ? "sent" : "received";
+            messagingBody.innerHTML += `<div class="chat-message ${messageClass}">${data.text} <br><small>${new Date(data.timestamp.toDate()).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-US')}</small></div>`;
+          });
+          messagingBody.scrollTop = messagingBody.scrollHeight;
+        });
+        window.currentChatId = chatId;
+        window.currentRecipient = recipientEmail;
+      } catch (e) {
+        console.error("Chat start failed:", e);
+        showError("errorMessage", "error_chat_start_failed", e.message);
+      }
+    };
+
+    window.sendMessage = async function() {
+      try {
+        const messagingInput = document.getElementById("messagingInput");
+        const text = messagingInput.value.trim();
+        if (!text || !window.currentChatId) return;
+        const userEmail = auth.currentUser.email;
+        const messageId = `MSG-${crypto.randomUUID().slice(0, 8)}`;
+        const message = {
+          messageId,
+          text,
+          sender: userEmail,
+          recipient: window.currentRecipient,
+          timestamp: new Date()
+        };
+
+        if (!navigator.onLine) {
+          await saveOfflineMessage({ ...message, chatId: window.currentChatId });
+        } else {
+          await addDoc(collection(db, "messages", window.currentChatId, "chat"), message);
+        }
+        messagingInput.value = "";
+      } catch (e) {
+        console.error("Message send failed:", e);
+        showError("errorMessage", "error_message_send_failed", e.message);
+      }
+    };
+
+    async function loadAutoPayments(userEmail) {
+      try {
+        const autoPaymentList = document.getElementById("autoPaymentList");
+        const q = query(collection(db, "autoPayments", userEmail));
+        const querySnapshot = await getDocs(q);
+        const lang = localStorage.getItem('language') || 'bn';
+        let html = "";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const frequency = lang === 'bn' ? (data.frequency === 'monthly' ? 'মাসিক' : 'সাপ্তাহিক') : data.frequency;
+          html += `
+            <tr>
+              <td>${data.recipient}</td>
+              <td>${data.amount} ${lang === 'bn' ? 'টাকা' : 'BDT'}</td>
+              <td>${frequency}</td>
+              <td><button class="auto-payment-cancel" onclick="cancelAutoPayment('${doc.id}')">${languageDictionary[lang].cancel}</button></td>
+            </tr>
+          `;
+        });
+        autoPaymentList.innerHTML = html;
+      } catch (e) {
+        console.error("Auto-payment load failed:", e);
+        showError("autoPaymentError", "error_auto_payment_failed", e.message);
+      }
+    }
+
+    window.setupAutoPayment = async function() {
+      try {
+        const recipientEmail = document.getElementById("autoPaymentEmail").value.trim();
+        const amount = parseFloat(document.getElementById("autoPaymentAmount").value);
+        const frequency = document.getElementById("autoPaymentFrequency").value;
+        if (!recipientEmail || !amount || amount <= 0) {
+          showError("autoPaymentError", "error_auto_payment_invalid");
+          return;
+        }
+        const userEmail = auth.currentUser.email;
+        const scheduleId = `SCH-${crypto.randomUUID().slice(0, 8)}`;
+        const autoPayment = {
+          scheduleId,
+          recipient: recipientEmail,
+          amount,
+          frequency,
+          createdAt: new Date()
+        };
+
+        if (!navigator.onLine) {
+          await saveOfflineAutoPayment({ ...autoPayment, userEmail });
+        } else {
+          await setDoc(doc(db, "autoPayments", userEmail, scheduleId), autoPayment);
+          showError("autoPaymentError", "error_auto_payment_success");
+        }
+        loadAutoPayments(userEmail);
+        document.getElementById("autoPaymentEmail").value = "";
+        document.getElementById("autoPaymentAmount").value = "";
+      } catch (e) {
+        console.error("Auto-payment setup failed:", e);
+        showError("autoPaymentError", "error_auto_payment_failed", e.message);
+      }
+    };
+
+    window.cancelAutoPayment = async function(scheduleId) {
+      try {
+        const userEmail = auth.currentUser.email;
+        await deleteDoc(doc(db, "autoPayments", userEmail, scheduleId));
+        showError("autoPaymentError", "error_auto_payment_cancel_success");
+        loadAutoPayments(userEmail);
+      } catch (e) {
+        console.error("Auto-payment cancel failed:", e);
+        showError("autoPaymentError", "error_auto_payment_cancel_failed", e.message);
+      }
     };
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
         const role = roles[user.email] || "Unknown";
+        const lang = localStorage.getItem('language') || 'bn';
+        switchLanguage(lang);
         loadWalletBalance(user.email);
         loadTransactionHistory(user.email);
+        loadChatMessages(user.email);
+        loadUserList(user.email);
+        loadAnalytics(user.email);
+        loadRewards(user.email);
+        if (role === "Admin" || role === "Operator") {
+          loadAutoPayments(user.email);
+        } else {
+          document.getElementById("autoPaymentSection").style.display = "none";
+        }
         if (role === "Delivery") {
           document.getElementById("walletActions").style.display = "none";
-          showError("errorMessage", "ডেলিভারি রোলের জন্য টাকা যোগ/পাঠানো অনুমোদিত নয়");
+          showError("errorMessage", role === "Delivery" ? (lang === 'bn' ? "ডেলিভারি রোলের জন্য টাকা যোগ/পাঠানো অনুমোদিত নয়" : "Delivery role not allowed to add/send money") : "error_unknown_role");
+        }
+        if (role !== "Delivery") {
+          document.getElementById("rewardsSection").style.display = "none";
         }
       } else {
         window.location.href = "index.html";
@@ -355,4 +946,4 @@
     });
   </script>
 </body>
-</html>
+        </html
