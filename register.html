@@ -1,0 +1,218 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-lang-key="title">রিক্সাওয়ালা কুরিয়ার - রেজিস্ট্রেশন</title>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="p-4">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold" data-lang-key="app_name">রিক্সাওয়ালা কুরিয়ার</h1>
+      <div class="flex items-center gap-4">
+        <button class="language-toggle" onclick="switchLanguage(localStorage.getItem('language') === 'bn' ? 'en' : 'bn')" data-lang-key="language_toggle">ইংরেজি</button>
+      </div>
+    </div>
+  </nav>
+  <div class="container mx-auto p-6">
+    <div class="register-section">
+      <h2 class="register-header" data-lang-key="register">রেজিস্ট্রেশন</h2>
+      <div class="register-form">
+        <input type="text" id="registerName" class="register-input" placeholder="আপনার নাম" aria-label="নাম" required>
+        <input type="tel" id="registerMobile" class="register-input" placeholder="মোবাইল নম্বর" aria-label="মোবাইল নম্বর" required>
+        <input type="email" id="registerEmail" class="register-input" placeholder="ইমেইল" aria-label="ইমেইল" required>
+        <input type="password" id="registerPassword" class="register-input" placeholder="পাসওয়ার্ড" aria-label="পাসওয়ার্ড" required>
+        <button onclick="registerUser()" class="btn-primary" data-lang-key="register">রেজিস্টার</button>
+        <p id="registerError" class="error-message"></p>
+      </div>
+      <p class="mt-4 text-content" data-lang-key="already_registered">ইতিমধ্যে অ্যাকাউন্ট আছে? <a href="index.html" class="text-[#4285F4]">লগইন করুন</a></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPO6pFLy9_e-4QxK1j5plm3aJukorL-cc",
+      authDomain: "rikshawala-4b781.firebaseapp.com",
+      projectId: "rikshawala-4b781",
+      storageBucket: "rikshawala-4b781.firebasestorage.app",
+      messagingSenderId: "1044246140325",
+      appId: "1:1044246140325:web:2dfbb3b3f9b55466e6c44c",
+      measurementId: "G-DFT19T4JJ9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const languageDictionary = {
+      bn: {
+        title: "রিক্সাওয়ালা কুরিয়ার - রেজিস্ট্রেশন",
+        app_name: "রিক্সাওয়ালা কুরিয়ার",
+        language_toggle: "ইংরেজি",
+        register: "রেজিস্ট্রেশন",
+        already_registered: "ইতিমধ্যে অ্যাকাউন্ট আছে? লগইন করুন",
+        error_invalid_name: "বৈধ নাম লিখুন (শুধুমাত্র অক্ষর এবং স্পেস)",
+        error_invalid_mobile: "বৈধ মোবাইল নম্বর লিখুন (যেমন: +8801XXXXXXXXX বা 01XXXXXXXXX)",
+        error_invalid_email: "বৈধ ইমেইল লিখুন",
+        error_invalid_password: "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে",
+        error_registration_failed: "রেজিস্ট্রেশন ব্যর্থ: ",
+        error_registration_success: "রেজিস্ট্রেশন সফল! লগইন করুন"
+      },
+      en: {
+        title: "Rickshawala Courier - Registration",
+        app_name: "Rickshawala Courier",
+        language_toggle: "বাংলা",
+        register: "Register",
+        already_registered: "Already have an account? Login",
+        error_invalid_name: "Enter a valid name (letters and spaces only)",
+        error_invalid_mobile: "Enter a valid mobile number (e.g., +8801XXXXXXXXX or 01XXXXXXXXX)",
+        error_invalid_email: "Enter a valid email",
+        error_invalid_password: "Password must be at least 6 characters",
+        error_registration_failed: "Registration failed: ",
+        error_registration_success: "Registration successful! Please login"
+      }
+    };
+
+    function showError(elementId, messageKey, error = '') {
+      const lang = localStorage.getItem('language') || 'bn';
+      const element = document.getElementById(elementId);
+      element.textContent = languageDictionary[lang][messageKey] + error;
+      element.style.display = 'block';
+      setTimeout(() => { element.style.display = 'none'; }, 5000);
+    }
+
+    function switchLanguage(lang) {
+      localStorage.setItem('language', lang);
+      document.querySelectorAll('[data-lang-key]').forEach(element => {
+        const key = element.getAttribute('data-lang-key');
+        if (languageDictionary[lang][key]) {
+          if (element.tagName === 'INPUT' && element.hasAttribute('placeholder')) {
+            element.placeholder = languageDictionary[lang][key];
+          } else {
+            element.textContent = languageDictionary[lang][key];
+          }
+        }
+      });
+      const toggleButton = document.querySelector('.language-toggle');
+      toggleButton.textContent = languageDictionary[lang].language_toggle;
+      document.querySelectorAll('input[aria-label]').forEach(input => {
+        const key = input.getAttribute('aria-label');
+        if (languageDictionary[lang][key]) {
+          input.setAttribute('aria-label', languageDictionary[lang][key]);
+        }
+      });
+      updateDynamicContent(lang);
+    }
+
+    function updateDynamicContent(lang) {
+      const alreadyRegistered = document.querySelector('.register-section p');
+      if (alreadyRegistered) {
+        alreadyRegistered.innerHTML = lang === 'bn' ? 'ইতিমধ্যে অ্যাকাউন্ট আছে? <a href="index.html" class="text-[#4285F4]">লগইন করুন</a>' : 'Already have an account? <a href="index.html" class="text-[#4285F4]">Login</a>';
+      }
+    }
+
+    window.registerUser = async function() {
+      try {
+        const name = document.getElementById("registerName").value.trim();
+        const mobile = document.getElementById("registerMobile").value.trim();
+        const email = document.getElementById("registerEmail").value.trim();
+        const password = document.getElementById("registerPassword").value;
+
+        // Validate name (letters and spaces only)
+        if (!/^[A-Za-z\s]+$/.test(name)) {
+          showError("registerError", "error_invalid_name");
+          return;
+        }
+
+        // Validate mobile number (Bangladesh format)
+        if (!/^(?:\+8801|01)[3-9]\d{8}$/.test(mobile)) {
+          showError("registerError", "error_invalid_mobile");
+          return;
+        }
+
+        // Validate email
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showError("registerError", "error_invalid_email");
+          return;
+        }
+
+        // Validate password
+        if (password.length < 6) {
+          showError("registerError", "error_invalid_password");
+          return;
+        }
+
+        // Register user with Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save user data to Firestore
+        await setDoc(doc(db, "users", user.email), {
+          name,
+          mobile,
+          role: "Delivery", // Default role
+          createdAt: new Date()
+        });
+
+        showError("registerError", "error_registration_success");
+        setTimeout(() => { window.location.href = "index.html"; }, 2000);
+      } catch (e) {
+        console.error("Registration failed:", e);
+        showError("registerError", "error_registration_failed", e.message);
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const lang = localStorage.getItem('language') || 'bn';
+      switchLanguage(lang);
+    });
+  </script>
+</body>
+</html>
